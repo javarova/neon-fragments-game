@@ -1,0 +1,1696 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>霓虹残片 · 像素深渊</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Press Start 2P', 'Courier New', monospace;
+            background: #0a0c14;
+            color: #d0e4f0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+            background-image: radial-gradient(circle at 30% 40%, #1a2a40 0%, #060810 90%);
+        }
+        #game-container {
+            max-width: 800px;
+            width: 100%;
+            background: rgba(8, 16, 28, 0.92);
+            backdrop-filter: blur(6px);
+            border: 2px solid #2f8aba;
+            border-radius: 20px;
+            padding: 28px 30px;
+            box-shadow: 0 0 30px rgba(47, 138, 186, 0.3), 0 30px 60px -10px rgba(0, 0, 0, 0.9);
+            position: relative;
+            min-height: 500px;
+        }
+        #game-container::before {
+            content: '';
+            position: absolute;
+            top: -2px; left: -2px; right: -2px; bottom: -2px;
+            border-radius: 22px;
+            background: linear-gradient(45deg, #2f8aba, #b04fcf, #2f8aba);
+            background-size: 300% 300%;
+            z-index: -1;
+            animation: borderGlow 4s ease-in-out infinite;
+            opacity: 0.7;
+        }
+        @keyframes borderGlow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .page { display: none; width: 100%; animation: fadeSlide 0.3s ease; }
+        .page.active { display: block; }
+
+        /* ===== 开始界面 ===== */
+        #start-screen { text-align: center; padding: 40px 10px 20px; position: relative; }
+        #start-screen h1 { font-size: 28px; color: #7fc9ff; text-shadow: 0 0 30px #3a7a9a; margin-bottom: 10px; letter-spacing: 4px; }
+        #start-screen .subtitle { font-size: 12px; color: #8aaccc; margin-bottom: 30px; opacity: 0.8; }
+        #start-screen .version { font-size: 9px; color: #5a7a8a; margin-top: 30px; opacity: 0.6; }
+
+        .menu-btn {
+            display: block; width: 80%; max-width: 320px; margin: 12px auto;
+            padding: 14px 0; background: #1d2e42; border: 2px solid #2e506a;
+            color: #dfecf5; border-radius: 60px; font-size: 14px;
+            font-family: inherit; cursor: pointer; transition: all 0.25s ease;
+            box-shadow: 0 4px 0 #0a1118;
+        }
+        .menu-btn:hover { background: #2a405a; border-color: #6aacd9; transform: translateY(-3px); box-shadow: 0 8px 0 #0a1118, 0 0 30px rgba(47, 138, 186, 0.3); }
+        .menu-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 #0a1118; }
+        .menu-btn.back-btn { width: auto; padding: 8px 24px; font-size: 11px; margin-top: 30px; background: #2a2a3a; border-color: #4a4a5a; }
+        .menu-btn.back-btn:hover { background: #3a3a4a; }
+
+        /* ===== 模式选择界面 ===== */
+        #mode-screen { text-align: center; padding: 40px 10px 20px; }
+        #mode-screen h2 { font-size: 20px; color: #f9ca6b; text-shadow: 0 0 20px #f9ca6b; margin-bottom: 30px; }
+        #mode-screen .mode-desc { font-size: 11px; color: #8aaccc; margin: 8px 0 20px; }
+
+        /* ===== 成就 & 档案界面 ===== */
+        #achievement-screen, #archive-screen { padding: 20px 10px; }
+        #achievement-screen h2, #archive-screen h2 {
+            font-size: 20px; text-align: center; margin-bottom: 30px;
+        }
+        #achievement-screen h2 { color: #f9ca6b; text-shadow: 0 0 20px #f9ca6b; }
+        #archive-screen h2 { color: #b5a6ff; text-shadow: 0 0 20px #b5a6ff; }
+
+        .achievement-item {
+            background: #0b141e; border: 1px solid #2a4a62; border-radius: 40px;
+            padding: 14px 20px; margin-bottom: 14px; display: flex; align-items: center; gap: 16px;
+        }
+        .achievement-item.locked { opacity: 0.5; filter: grayscale(0.8); }
+        .achievement-item .icon { font-size: 28px; width: 48px; text-align: center; }
+        .achievement-item .info { flex: 1; }
+        .achievement-item .info .name { font-size: 13px; color: #d0e4f0; }
+        .achievement-item .info .desc { font-size: 10px; color: #7a9ab5; margin-top: 4px; }
+        .achievement-item .status { font-size: 12px; padding: 4px 14px; border-radius: 30px; background: #1a2a3a; color: #7a9ab5; }
+        .achievement-item.unlocked .status { background: #2a5a3a; color: #7fdf8f; }
+
+        .archive-data { background: #0b141e; border: 1px solid #2a4a62; border-radius: 20px; padding: 20px; font-size: 12px; line-height: 2.2; }
+        .archive-data .label { color: #7a9ab5; }
+        .archive-data .value { color: #d0e4f0; float: right; }
+        .no-archive { text-align: center; color: #7a9ab5; padding: 30px 0; font-size: 13px; }
+
+        /* ===== 游戏界面 ===== */
+        #status-bar {
+            display: flex; justify-content: space-between; background: #0b141e;
+            padding: 10px 16px; border-radius: 40px; margin-bottom: 22px;
+            border: 1px solid #1e3b52; flex-wrap: wrap; gap: 6px;
+        }
+        .stat-item {
+            display: flex; align-items: center; gap: 6px; background: #162433;
+            padding: 4px 16px; border-radius: 40px; font-size: 11px;
+        }
+        .stat-item span { font-weight: bold; min-width: 28px; display: inline-block; text-shadow: 0 0 8px currentColor; }
+        .hp span { color: #ff7b7b; }
+        .stamina span { color: #7fc9ff; }
+        .fragment span { color: #f9ca6b; }
+        .floor span { color: #b5a6ff; }
+        .rest span { color: #a8d8a8; }
+
+        #story-text {
+            background: #0b121b; padding: 22px 20px; border-radius: 16px;
+            min-height: 200px; line-height: 1.9; font-size: 13px; margin-bottom: 22px;
+            border-left: 6px solid #3d7a9a;
+            white-space: pre-wrap; word-break: break-word;
+        }
+        #story-text .highlight { color: #ffd966; }
+        #story-text .danger { color: #ff6b6b; }
+
+        #actions { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+        .action-btn {
+            background: #1d2e42; border: 2px solid #2e506a; color: #dfecf5;
+            padding: 12px 20px; border-radius: 40px; font-size: 12px;
+            font-family: inherit; cursor: pointer; transition: all 0.25s ease;
+            text-align: left; box-shadow: 0 4px 0 #0a1118;
+        }
+        .action-btn:hover:not(:disabled) {
+            background: #2a405a; border-color: #6aacd9;
+            transform: translateY(-3px); box-shadow: 0 8px 0 #0a1118;
+        }
+        .action-btn:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 1px 0 #0a1118; }
+        .action-btn:disabled { opacity: 0.35; cursor: not-allowed; filter: grayscale(0.7); }
+
+        #inventory-box {
+            margin-top: 4px; padding: 10px 16px; background: #0b111b;
+            border-radius: 40px; font-size: 11px; display: flex; gap: 8px;
+            flex-wrap: wrap; border: 1px dashed #2a4a62; color: #7a9ab5;
+            align-items: center;
+        }
+        .inv-item {
+            background: #1d3148; padding: 2px 16px; border-radius: 30px;
+            color: #c3ddf5; font-size: 10px;
+        }
+
+        /* 游戏内工具栏 */
+        .game-toolbar {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;
+        }
+        .game-toolbar .title {
+            font-size: 14px; color: #7fc9ff; text-shadow: 0 0 20px #3a7a9a;
+        }
+        .game-toolbar .toolbar-btns {
+            display: flex; gap: 8px;
+        }
+        .toolbar-btn {
+            background: none; border: 1px solid #3b5a72; color: #7a9ab5;
+            padding: 4px 14px; border-radius: 40px; cursor: pointer;
+            font-size: 10px; font-family: inherit; transition: 0.2s;
+        }
+        .toolbar-btn:hover { color: #ffaeae; border-color: #8a4a4a; background: #1a1a22; }
+
+        #hint-area {
+            margin-top: 12px; padding: 10px 16px; border-radius: 40px;
+            background: #1a1a2e; border: 2px solid #ff6b6b; color: #ff6b6b;
+            font-size: 11px; text-align: center; display: none;
+        }
+        #hint-area .hint-btn {
+            background: #ff6b6b; color: #0a0c14; border: none;
+            padding: 4px 18px; border-radius: 40px; font-family: inherit;
+            font-size: 11px; cursor: pointer; margin-left: 10px;
+        }
+        #hint-area .hint-btn:hover { background: #ff8a8a; }
+
+        /* ===== 语言球 ===== */
+        #lang-ball {
+            position: relative;
+            display: inline-block;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #4a9aca, #1a4a6a);
+            box-shadow: 0 0 20px rgba(47, 138, 186, 0.5), inset 0 -4px 8px rgba(0,0,0,0.6);
+            cursor: pointer;
+            margin-top: 20px;
+            transition: 0.3s;
+            line-height: 48px;
+            text-align: center;
+            font-size: 24px;
+            color: #fff;
+            text-shadow: 0 0 10px rgba(255,255,255,0.3);
+        }
+        #lang-ball:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 30px rgba(47, 138, 186, 0.8);
+        }
+        #lang-ball .tooltip {
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.2s;
+            position: absolute;
+            bottom: 55px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: #d0e4f0;
+            padding: 6px 14px;
+            border-radius: 30px;
+            font-size: 11px;
+            white-space: nowrap;
+            border: 1px solid #2f8aba;
+            pointer-events: none;
+        }
+        #lang-ball:hover .tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* ===== 模态弹窗 ===== */
+        #modal-overlay {
+            display: none;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 9999;
+            justify-content: center; align-items: center;
+        }
+        #modal-overlay.active {
+            display: flex;
+        }
+        .modal-box {
+            background: #0b141e; border: 2px solid #2f8aba; border-radius: 20px;
+            padding: 30px 25px; max-width: 500px; width: 90%;
+            text-align: center; box-shadow: 0 0 40px rgba(47,138,186,0.4);
+            animation: fadeSlide 0.3s ease;
+        }
+        .modal-title {
+            font-size: 16px; color: #7fc9ff; margin-bottom: 18px;
+        }
+        .modal-body {
+            font-size: 13px; line-height: 1.8; margin-bottom: 25px; color: #d0e4f0;
+        }
+        .modal-actions {
+            display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;
+        }
+        .modal-btn {
+            padding: 10px 28px; border-radius: 40px; font-family: inherit;
+            font-size: 12px; cursor: pointer; border: 2px solid #2e506a;
+            background: #1d2e42; color: #dfecf5; transition: 0.2s;
+            box-shadow: 0 4px 0 #0a1118;
+        }
+        .modal-btn:hover { background: #2a405a; border-color: #6aacd9; transform: translateY(-2px); }
+        .modal-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 #0a1118; }
+        .modal-btn.primary { background: #3a5a6a; border-color: #5a8aaa; }
+        .modal-btn.danger { background: #6a3a3a; border-color: #8a4a4a; }
+        .modal-btn.selected { background: #2a5a7a; border-color: #7fc9ff; box-shadow: 0 0 20px rgba(47,138,186,0.5); }
+
+        @keyframes fadeSlide { 0% { opacity: 0; transform: translateY(12px); } 100% { opacity: 1; transform: translateY(0); } }
+        @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.2; } }
+        .flash-hp { animation: blink 0.4s ease 2; }
+        .flash-stamina { animation: blink 0.4s ease 2; }
+        .flash-fragment { animation: blink 0.4s ease 2; }
+        #story-text .typing-cursor {
+            display: inline-block; width: 6px; height: 1.2em;
+            background: #7fc9ff; margin-left: 4px; animation: blink 0.8s infinite;
+            vertical-align: text-bottom;
+        }
+
+        @media (max-width: 600px) {
+            #game-container { padding: 16px; }
+            .stat-item { font-size: 9px; padding: 2px 10px; }
+            #story-text { font-size: 11px; padding: 16px; }
+            .action-btn { font-size: 10px; padding: 10px 16px; }
+            #inventory-box { font-size: 9px; }
+            #start-screen h1 { font-size: 20px; }
+            .menu-btn { font-size: 12px; }
+            .modal-box { padding: 20px; }
+            .modal-body { font-size: 11px; }
+            #lang-ball { width: 40px; height: 40px; font-size: 20px; line-height: 40px; }
+        }
+    </style>
+</head>
+<body>
+<div id="game-container">
+
+    <!-- ===== 开始界面 ===== -->
+    <div id="start-screen" class="page active">
+        <h1 id="lang-title">✦ 霓虹残片</h1>
+        <div class="subtitle" id="lang-subtitle">赛博公主 · 记忆回廊</div>
+        <button class="menu-btn" id="btn-start" data-key="btn_start">▶ 开始游戏</button>
+        <button class="menu-btn" id="btn-archive" data-key="btn_archive">📂 查看档案</button>
+        <button class="menu-btn" id="btn-achievements" data-key="btn_achievements">🏆 成就</button>
+        <button class="menu-btn" id="btn-announce" data-key="btn_announce">📢 公告</button>
+        <div class="version" id="lang-version">V0.30.2 制作人 Javarova</div>
+
+        <!-- 语言球 -->
+        <div id="lang-ball" title="语言 / Language">
+            🌐
+            <span class="tooltip">语言</span>
+        </div>
+    </div>
+
+    <!-- ===== 模式选择界面 ===== -->
+    <div id="mode-screen" class="page">
+        <h2 id="mode-title">⚔️ 选择难度</h2>
+        <button class="menu-btn" id="mode-hard">🔥 困难</button>
+        <div class="mode-desc" id="mode-desc-hard">探索消耗 25 体力 · 成功率 40% · 休息恢复减半</div>
+        <button class="menu-btn" id="mode-insane">💀 吊炸天</button>
+        <div class="mode-desc" id="mode-desc-insane">探索消耗 30 体力 · 成功率 30% · 休息几乎无效 · BOSS 胜率 30%</div>
+        <button class="menu-btn back-btn" id="mode-back">← 返回</button>
+    </div>
+
+    <!-- ===== 游戏界面 ===== -->
+    <div id="game-screen" class="page">
+        <div class="game-toolbar">
+            <span class="title">✦ 霓虹残片</span>
+            <div class="toolbar-btns">
+                <button class="toolbar-btn" id="btn-back-menu">↩ 主菜单</button>
+                <button class="toolbar-btn" id="reset-btn">⟳ 重启</button>
+            </div>
+        </div>
+        <div id="status-bar">
+            <div class="stat-item hp">❤️ <span id="hp-display">20</span></div>
+            <div class="stat-item stamina">⚡ <span id="stamina-display">100</span></div>
+            <div class="stat-item fragment">🧩 <span id="fragment-display">0</span></div>
+            <div class="stat-item floor">🏙️ <span id="floor-display">1</span>层</div>
+            <div class="stat-item rest">🛌 <span id="rest-display">5</span></div>
+        </div>
+        <div id="story-text">正在连接神经网...</div>
+        <div id="actions"></div>
+        <div id="hint-area">
+            <span id="hint-message"></span>
+            <button class="hint-btn" id="hint-reset-btn">重启游戏</button>
+        </div>
+        <div id="inventory-box">📦 义体背包: <span id="inventory-list">空</span></div>
+    </div>
+
+    <!-- ===== 成就界面 ===== -->
+    <div id="achievement-screen" class="page">
+        <h2>🏆 成就</h2>
+        <div id="achievement-list"></div>
+        <button class="menu-btn back-btn" id="ach-back">← 返回</button>
+    </div>
+
+    <!-- ===== 档案界面 ===== -->
+    <div id="archive-screen" class="page">
+        <h2>📂 档案</h2>
+        <div id="archive-content" class="archive-data"></div>
+        <button class="menu-btn back-btn" id="arch-back">← 返回</button>
+    </div>
+
+    <!-- ===== 模态弹窗（通用） ===== -->
+    <div id="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-title" id="modal-title">标题</div>
+            <div class="modal-body" id="modal-body">内容</div>
+            <div class="modal-actions" id="modal-actions"></div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // ================================================================
+    // 全部游戏逻辑
+    // ================================================================
+    (function() {
+        'use strict';
+
+        // ---- 语言系统 ----
+        const LANG = {
+            'zh': {
+                title: '✦ 霓虹残片',
+                subtitle: '赛博公主 · 记忆回廊',
+                btn_start: '▶ 开始游戏',
+                btn_archive: '📂 查看档案',
+                btn_achievements: '🏆 成就',
+                btn_announce: '📢 公告',
+                version: 'V0.30.2 制作人 Javarova',
+                mode_title: '⚔️ 选择难度',
+                mode_hard: '🔥 困难',
+                mode_hard_desc: '探索消耗 25 体力 · 成功率 40% · 休息恢复减半',
+                mode_insane: '💀 吊炸天',
+                mode_insane_desc: '探索消耗 30 体力 · 成功率 30% · 休息几乎无效 · BOSS 胜率 30%',
+                mode_back: '← 返回',
+                announce_title: '📢 公告',
+                announce_body: '这是一个个人开发的独立文字网页小游戏，目前部分内容仍处于测试阶段，请耐心等待后续更新，<br>---- Javarova',
+                announce_btn: '我知道了',
+                lang_select_title: '🌐 语言选择',
+                lang_zh: '简体中文',
+                lang_en: 'English',
+                confirm_title: '⚠️ 确认切换',
+                confirm_body: function(lang) { return '你要切换 ' + lang + ' 吗？'; },
+                confirm_yes: '是',
+                confirm_no: '取消',
+                back_confirm_title: '⚠️ 警告',
+                back_confirm_body: '你真的要离开吗？退出后将丢失当前进度。',
+                back_confirm_yes: '是的',
+                back_confirm_no: '我再想想',
+                hint_rest: '剩余休息',
+                hint_empty: '空'
+            },
+            'en': {
+                title: '✦ Neon Fragments',
+                subtitle: 'Cyber Princess · Memory Corridor',
+                btn_start: '▶ Start Game',
+                btn_archive: '📂 Archive',
+                btn_achievements: '🏆 Achievements',
+                btn_announce: '📢 Announcement',
+                version: 'V0.30.2 Dev Javarova',
+                mode_title: '⚔️ Select Difficulty',
+                mode_hard: '🔥 Hard',
+                mode_hard_desc: 'Explore cost 25 stamina · Success rate 40% · Rest recovery halved',
+                mode_insane: '💀 Insane',
+                mode_insane_desc: 'Explore cost 30 stamina · Success rate 30% · Rest nearly useless · Boss win rate 30%',
+                mode_back: '← Back',
+                announce_title: '📢 Announcement',
+                announce_body: 'This is an indie text-based web game, some content is still in beta. Please stay tuned for updates.<br>---- Javarova',
+                announce_btn: 'Got it',
+                lang_select_title: '🌐 Language',
+                lang_zh: '简体中文',
+                lang_en: 'English',
+                confirm_title: '⚠️ Confirm Switch',
+                confirm_body: function(lang) { return 'Are you sure you want to switch to ' + lang + '?'; },
+                confirm_yes: 'Yes',
+                confirm_no: 'Cancel',
+                back_confirm_title: '⚠️ Warning',
+                back_confirm_body: 'Are you sure you want to leave? Progress will be lost.',
+                back_confirm_yes: 'Yes',
+                back_confirm_no: 'Think again',
+                hint_rest: 'Rest left',
+                hint_empty: 'Empty'
+            }
+        };
+
+        let currentLang = 'zh'; // 默认简体中文
+
+        // 加载保存的语言
+        function loadLanguage() {
+            const saved = localStorage.getItem('game_lang');
+            if (saved && (saved === 'zh' || saved === 'en')) {
+                currentLang = saved;
+            } else {
+                currentLang = 'zh';
+            }
+        }
+
+        function saveLanguage(lang) {
+            localStorage.setItem('game_lang', lang);
+            currentLang = lang;
+        }
+
+        function t(key, ...args) {
+            const langData = LANG[currentLang];
+            let text = langData[key];
+            if (typeof text === 'function') {
+                return text(...args);
+            }
+            return text || key;
+        }
+
+        // 更新界面文本（开始界面 & 模式选择）
+        function updateUILanguage() {
+            document.getElementById('lang-title').innerText = t('title');
+            document.getElementById('lang-subtitle').innerText = t('subtitle');
+            document.getElementById('btn-start').innerText = t('btn_start');
+            document.getElementById('btn-archive').innerText = t('btn_archive');
+            document.getElementById('btn-achievements').innerText = t('btn_achievements');
+            document.getElementById('btn-announce').innerText = t('btn_announce');
+            document.getElementById('lang-version').innerText = t('version');
+
+            document.getElementById('mode-title').innerText = t('mode_title');
+            document.getElementById('mode-hard').innerText = t('mode_hard');
+            document.getElementById('mode-desc-hard').innerText = t('mode_hard_desc');
+            document.getElementById('mode-insane').innerText = t('mode_insane');
+            document.getElementById('mode-desc-insane').innerText = t('mode_insane_desc');
+            document.getElementById('mode-back').innerText = t('mode_back');
+
+            // 存档中的“空”文本会在渲染时动态调用 t
+        }
+
+        // ---- 音效 ----
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+        function playTone(freq, duration, type, volume) {
+            try {
+                if (!audioCtx) audioCtx = new AudioCtx();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type || 'sine';
+                osc.frequency.value = freq;
+                gain.gain.setValueAtTime(volume || 0.12, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch (e) {}
+        }
+        function sfxClick() { playTone(880, 0.08, 'sine', 0.07); }
+        function sfxSuccess() { playTone(1200, 0.15, 'sine', 0.10); setTimeout(() => playTone(1500, 0.1, 'sine', 0.08), 120); }
+        function sfxFail() { playTone(280, 0.25, 'sawtooth', 0.08); }
+        function sfxHeal() { playTone(660, 0.2, 'sine', 0.08); setTimeout(() => playTone(880, 0.15, 'sine', 0.08), 150); }
+        function sfxItem() { playTone(1000, 0.1, 'square', 0.05); }
+        function sfxAchievement() { playTone(1500, 0.15, 'sine', 0.15); setTimeout(() => playTone(1800, 0.1, 'sine', 0.12), 150); }
+
+        // ---- 成就系统 ----
+        const ACHIEVEMENTS = [
+            { id: 'fragments', name: '碎片收集者', desc: '收集 5 块记忆碎片', icon: '🧩', hidden: false },
+            { id: 'all_items', name: '全副武装', desc: '获得所有特殊物品', icon: '⚙️', hidden: false },
+            { id: 'explorer', name: '探险家', desc: '总探索次数达到 30 次', icon: '🔍', hidden: false },
+            { id: 'ascetic', name: '苦行僧', desc: '在不使用任何休息的情况下通关', icon: '🧘', hidden: true }
+        ];
+
+        function loadAchievements() {
+            const saved = localStorage.getItem('achievements');
+            if (saved) {
+                try { return JSON.parse(saved); } catch(e) {}
+            }
+            const obj = {};
+            ACHIEVEMENTS.forEach(a => obj[a.id] = false);
+            return obj;
+        }
+
+        function saveAchievements(ach) {
+            localStorage.setItem('achievements', JSON.stringify(ach));
+        }
+
+        function unlockAchievement(id) {
+            const ach = loadAchievements();
+            if (!ach[id]) {
+                ach[id] = true;
+                saveAchievements(ach);
+                sfxAchievement();
+                if (document.getElementById('achievement-screen').classList.contains('active')) {
+                    renderAchievements();
+                }
+            }
+        }
+
+        function renderAchievements() {
+            const list = document.getElementById('achievement-list');
+            const ach = loadAchievements();
+            list.innerHTML = '';
+            ACHIEVEMENTS.forEach(a => {
+                const unlocked = ach[a.id] || false;
+                const div = document.createElement('div');
+                div.className = 'achievement-item' + (unlocked ? ' unlocked' : ' locked');
+                let displayName = a.name;
+                if (a.hidden && !unlocked) displayName = '？？？';
+                div.innerHTML = `
+                    <div class="icon">${a.hidden && !unlocked ? '❓' : a.icon}</div>
+                    <div class="info">
+                        <div class="name">${displayName}</div>
+                        <div class="desc">${a.hidden && !unlocked ? '隐藏成就，解锁条件未知' : a.desc}</div>
+                    </div>
+                    <div class="status">${unlocked ? '✅ 已解锁' : '🔒 未解锁'}</div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        // ---- 存档 ----
+        function saveGame(state) {
+            const data = {
+                fragments: state.fragments,
+                inventory: state.inventory,
+                currentFloor: state.currentFloor,
+                totalExplores: state.totalExplores,
+                totalRest: state.totalRest,
+                hp: state.hp,
+                stamina: state.stamina,
+                _ghostAccepted: state._ghostAccepted,
+                _bossDefeated: state._bossDefeated,
+                usedRestEvents: state.usedRestEvents,
+                currentScene: state.currentScene,
+                difficulty: state.difficulty
+            };
+            localStorage.setItem('game_save', JSON.stringify(data));
+        }
+
+        function loadGame() {
+            const saved = localStorage.getItem('game_save');
+            if (saved) {
+                try { return JSON.parse(saved); } catch(e) {}
+            }
+            return null;
+        }
+
+        // ---- 游戏数据（完整场景） ----
+        let GAME = null;
+
+        // 状态
+        let state = {
+            hp: 20,
+            stamina: 100,
+            fragments: 0,
+            inventory: [],
+            currentFloor: 1,
+            currentScene: 'entrance',
+            _ghostAccepted: false,
+            _bossDefeated: false,
+            totalRest: 5,
+            usedRestEvents: {},
+            totalExplores: 0,
+            difficulty: null
+        };
+
+        let typingTimer = null;
+        let prevHp, prevStamina, prevFrag;
+
+        function typeText(element, text, speed) {
+            if (typingTimer) clearInterval(typingTimer);
+            element.innerHTML = '';
+            let index = 0;
+            const cursor = '<span class="typing-cursor"></span>';
+            element.innerHTML = cursor;
+            typingTimer = setInterval(function() {
+                if (index < text.length) {
+                    const char = text[index];
+                    if (char === '<') {
+                        const end = text.indexOf('>', index);
+                        if (end !== -1) {
+                            const tag = text.substring(index, end + 1);
+                            element.innerHTML = element.innerHTML.replace(cursor, '') + tag + cursor;
+                            index = end + 1;
+                            return;
+                        }
+                    }
+                    element.innerHTML = element.innerHTML.replace(cursor, '') + char + cursor;
+                    index++;
+                } else {
+                    element.innerHTML = element.innerHTML.replace(cursor, '');
+                    clearInterval(typingTimer);
+                    typingTimer = null;
+                }
+            }, speed || 20);
+        }
+
+        function getScene(id) {
+            if (id === '__RESTART__') { resetGame(); return null; }
+            return GAME.scenes[id];
+        }
+
+        function applyEvent(state, evt) {
+            if (evt.hp) state.hp += evt.hp;
+            if (evt.stamina) state.stamina += evt.stamina;
+            if (evt.frag) state.fragments += evt.frag;
+            if (evt.special === 'key' && !state.inventory.includes('加密密钥')) {
+                state.inventory.push('加密密钥');
+                sfxItem();
+            }
+            if (evt.special === 'starter' && !state.inventory.includes('核心启动器')) {
+                state.inventory.push('核心启动器');
+                sfxItem();
+            }
+            if (evt.type === 'rest_event' && evt.id) {
+                state.usedRestEvents[evt.id] = true;
+            }
+            clamp(state);
+        }
+
+        function clamp(state) {
+            if (state.fragments < 0) state.fragments = 0;
+            if (state.hp < 0) state.hp = 0;
+            if (state.stamina < 0) state.stamina = 0;
+            if (state.hp > 35) state.hp = 35;
+            if (state.stamina > 120) state.stamina = 120;
+        }
+
+        function checkCriticalHints(state) {
+            const hasKey = state.inventory.includes('加密密钥');
+            const hasStarter = state.inventory.includes('核心启动器');
+            const hasEnoughFragments = state.fragments >= 5;
+            const exploredEnough = state.totalExplores >= 15;
+            if (exploredEnough && (!hasKey || !hasStarter || !hasEnoughFragments)) {
+                let missing = [];
+                if (!hasKey) missing.push('加密密钥');
+                if (!hasStarter) missing.push('核心启动器');
+                if (!hasEnoughFragments) missing.push('碎片（需5块）');
+                return '⚠️ 已探索 ' + state.totalExplores + ' 次，仍未获得：' + missing.join('、') + '。建议重启游戏重新尝试。';
+            }
+            return null;
+        }
+
+        // ---- 渲染 ----
+        function render() {
+            const scene = getScene(state.currentScene);
+            if (!scene) return;
+
+            if (state.hp <= 0 || state.stamina <= 0) {
+                if (state.currentScene !== 'ending_death') {
+                    state.currentScene = 'ending_death';
+                    render();
+                    return;
+                }
+            }
+
+            document.getElementById('hp-display').innerText = Math.max(0, state.hp);
+            document.getElementById('stamina-display').innerText = Math.max(0, state.stamina);
+            document.getElementById('fragment-display').innerText = state.fragments;
+            document.getElementById('floor-display').innerText = state.currentFloor || '?';
+            document.getElementById('rest-display').innerText = state.totalRest;
+
+            const invSpan = document.getElementById('inventory-list');
+            if (state.inventory.length === 0) {
+                invSpan.innerText = t('hint_empty');
+            } else {
+                invSpan.innerText = state.inventory.join('、');
+            }
+
+            let displayText = scene.text;
+            if (typeof displayText === 'function') {
+                displayText = displayText(state);
+            }
+            if (window._eventResult) {
+                displayText += '\n\n---\n' + window._eventResult;
+                window._eventResult = null;
+            }
+
+            const storyEl = document.getElementById('story-text');
+            if (typingTimer) { clearInterval(typingTimer); typingTimer = null; }
+            typeText(storyEl, displayText.replace(/\n/g, '\n'), 18);
+
+            const actionsDiv = document.getElementById('actions');
+            actionsDiv.innerHTML = '';
+
+            if (state.hp <= 0 || state.stamina <= 0) {
+                const btn = document.createElement('button');
+                btn.className = 'action-btn';
+                btn.innerText = '💀 状态归零，请重启';
+                btn.disabled = true;
+                actionsDiv.appendChild(btn);
+            } else {
+                const options = scene.options || [];
+                options.forEach(function(opt) {
+                    const btn = document.createElement('button');
+                    btn.className = 'action-btn';
+                    let available = true;
+                    let btnText = opt.text;
+                    if (typeof btnText === 'function') {
+                        btnText = btnText(state);
+                    }
+                    if (opt.condition) {
+                        try { available = opt.condition(state); } catch (e) { available = false; }
+                    }
+                    if (!available) {
+                        btn.disabled = true;
+                        btn.innerText = '🔒 ' + (btnText.includes('需') ? btnText : btnText + ' (条件不足)');
+                    } else {
+                        btn.innerText = btnText;
+                        btn.onclick = function() {
+                            sfxClick();
+                            if (opt.next === '__RESTART__') { resetGame(); return; }
+                            if (opt.next) {
+                                let nextId = opt.next;
+                                if (typeof nextId === 'function') {
+                                    nextId = nextId(state);
+                                }
+                                const nextScene = getScene(nextId);
+                                if (nextScene && nextScene.on_enter) {
+                                    nextScene.on_enter(state);
+                                }
+                                state.currentScene = nextId;
+                                window._triggerGhost = false;
+                                render();
+                                saveGame(state);
+                                checkAndUnlockAchievements(state);
+                            }
+                        };
+                    }
+                    actionsDiv.appendChild(btn);
+                });
+            }
+
+            // 提示
+            const hintArea = document.getElementById('hint-area');
+            const hintMsg = document.getElementById('hint-message');
+            const hint = checkCriticalHints(state);
+            if (hint) {
+                hintArea.style.display = 'block';
+                hintMsg.innerText = hint;
+            } else {
+                hintArea.style.display = 'none';
+            }
+
+            flashIfChanged();
+        }
+
+        function checkAndUnlockAchievements(state) {
+            if (state.fragments >= 5) unlockAchievement('fragments');
+            const allItems = ['加密密钥', '核心启动器', '幽灵之吻', '胜利勋章'];
+            const hasAll = allItems.every(function(item) { return state.inventory.includes(item); });
+            if (hasAll) unlockAchievement('all_items');
+            if (state.totalExplores >= 30) unlockAchievement('explorer');
+            if (state._bossDefeated && state.totalRest === 5) {
+                unlockAchievement('ascetic');
+            }
+        }
+
+        function resetGame() {
+            const diff = state.difficulty || { exploreCost: 20, successRate: 0.5, restStamina: 15, restHP: 3, bossWinRate: 0.6, failExtraDamage: 0 };
+            state = {
+                hp: 20,
+                stamina: 100,
+                fragments: 0,
+                inventory: [],
+                currentFloor: 1,
+                currentScene: 'entrance',
+                _ghostAccepted: false,
+                _bossDefeated: false,
+                totalRest: 5,
+                usedRestEvents: {},
+                totalExplores: 0,
+                difficulty: diff
+            };
+            window._eventResult = null;
+            window._triggerGhost = false;
+            const startScene = getScene(state.currentScene);
+            if (startScene && startScene.on_enter) startScene.on_enter(state);
+            render();
+        }
+
+        function flashIfChanged() {
+            const hpEl = document.getElementById('hp-display');
+            const staEl = document.getElementById('stamina-display');
+            const fragEl = document.getElementById('fragment-display');
+            if (prevHp !== undefined && prevHp !== state.hp) {
+                hpEl.parentElement.classList.add('flash-hp');
+                setTimeout(function() { hpEl.parentElement.classList.remove('flash-hp'); }, 400);
+            }
+            if (prevStamina !== undefined && prevStamina !== state.stamina) {
+                staEl.parentElement.classList.add('flash-stamina');
+                setTimeout(function() { staEl.parentElement.classList.remove('flash-stamina'); }, 400);
+            }
+            if (prevFrag !== undefined && prevFrag !== state.fragments) {
+                fragEl.parentElement.classList.add('flash-fragment');
+                setTimeout(function() { fragEl.parentElement.classList.remove('flash-fragment'); }, 400);
+            }
+            prevHp = state.hp;
+            prevStamina = state.stamina;
+            prevFrag = state.fragments;
+        }
+
+        // ---- 启动游戏（带难度） ----
+        function startGameWithMode(mode) {
+            let diff;
+            if (mode === 'hard') {
+                diff = { exploreCost: 25, successRate: 0.4, restStamina: 10, restHP: 2, bossWinRate: 0.5, failExtraDamage: 0 };
+            } else if (mode === 'insane') {
+                diff = { exploreCost: 30, successRate: 0.3, restStamina: 5, restHP: 1, bossWinRate: 0.3, failExtraDamage: -3 };
+            } else {
+                diff = { exploreCost: 20, successRate: 0.5, restStamina: 15, restHP: 3, bossWinRate: 0.6, failExtraDamage: 0 };
+            }
+
+            const saved = loadGame();
+            if (saved && saved.difficulty && saved.difficulty.exploreCost === diff.exploreCost) {
+                state = {
+                    hp: saved.hp || 20,
+                    stamina: saved.stamina || 100,
+                    fragments: saved.fragments || 0,
+                    inventory: saved.inventory || [],
+                    currentFloor: saved.currentFloor || 1,
+                    currentScene: saved.currentScene || 'entrance',
+                    _ghostAccepted: saved._ghostAccepted || false,
+                    _bossDefeated: saved._bossDefeated || false,
+                    totalRest: saved.totalRest !== undefined ? saved.totalRest : 5,
+                    usedRestEvents: saved.usedRestEvents || {},
+                    totalExplores: saved.totalExplores || 0,
+                    difficulty: diff
+                };
+            } else {
+                state = {
+                    hp: 20,
+                    stamina: 100,
+                    fragments: 0,
+                    inventory: [],
+                    currentFloor: 1,
+                    currentScene: 'entrance',
+                    _ghostAccepted: false,
+                    _bossDefeated: false,
+                    totalRest: 5,
+                    usedRestEvents: {},
+                    totalExplores: 0,
+                    difficulty: diff
+                };
+                const startScene = getScene(state.currentScene);
+                if (startScene && startScene.on_enter) startScene.on_enter(state);
+            }
+            state.difficulty = diff;
+            showPage('game-screen');
+            render();
+            saveGame(state);
+        }
+
+        // ---- 页面切换 ----
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(function(p) {
+                p.classList.remove('active');
+            });
+            document.getElementById(pageId).classList.add('active');
+        }
+
+        // ---- 档案 ----
+        function renderArchive() {
+            const data = loadGame();
+            const content = document.getElementById('archive-content');
+            if (!data) {
+                content.innerHTML = `<div class="no-archive">暂无存档记录<br><span style="font-size:10px;opacity:0.6;">开始游戏后会自动保存</span></div>`;
+                return;
+            }
+            const diff = data.difficulty || { exploreCost: 20, successRate: 0.5 };
+            content.innerHTML = `
+                <div><span class="label">🧩 记忆碎片</span><span class="value">${data.fragments} / 5</span></div>
+                <div><span class="label">📦 持有物品</span><span class="value">${data.inventory.length ? data.inventory.join('、') : '无'}</span></div>
+                <div><span class="label">🏙️ 当前层数</span><span class="value">第 ${data.currentFloor} 层</span></div>
+                <div><span class="label">🔍 总探索次数</span><span class="value">${data.totalExplores}</span></div>
+                <div><span class="label">🛌 剩余休息</span><span class="value">${data.totalRest}</span></div>
+                <div><span class="label">❤️ 生命</span><span class="value">${data.hp}</span></div>
+                <div><span class="label">⚡ 体力</span><span class="value">${data.stamina}</span></div>
+                <div><span class="label">💕 幽灵羁绊</span><span class="value">${data._ghostAccepted ? '已接受' : '未触发'}</span></div>
+                <div><span class="label">⚔️ BOSS 状态</span><span class="value">${data._bossDefeated ? '已击败' : '未挑战'}</span></div>
+                <div><span class="label">⚙️ 难度</span><span class="value">${diff.exploreCost === 20 ? '普通' : diff.exploreCost === 25 ? '困难' : '吊炸天'}</span></div>
+            `;
+        }
+
+        // ---- 模态弹窗 ----
+        function showModal(title, bodyHTML, actions) {
+            const overlay = document.getElementById('modal-overlay');
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-body').innerHTML = bodyHTML;
+            const actionsContainer = document.getElementById('modal-actions');
+            actionsContainer.innerHTML = '';
+            actions.forEach(function(action) {
+                const btn = document.createElement('button');
+                btn.className = 'modal-btn' + (action.type ? ' ' + action.type : '');
+                btn.innerText = action.label;
+                btn.onclick = function() {
+                    if (action.callback) action.callback();
+                    closeModal();
+                };
+                actionsContainer.appendChild(btn);
+            });
+            overlay.classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('modal-overlay').classList.remove('active');
+        }
+
+        // ---- 显示公告 ----
+        function showAnnouncement() {
+            showModal(
+                t('announce_title'),
+                t('announce_body'),
+                [{ label: t('announce_btn'), callback: function() {} }]
+            );
+        }
+
+        // ---- 返回主菜单 ----
+        function backToMenu() {
+            showModal(
+                t('back_confirm_title'),
+                t('back_confirm_body'),
+                [
+                    { label: t('back_confirm_yes'), type: 'danger', callback: function() {
+                        const diff = state.difficulty || { exploreCost: 20, successRate: 0.5, restStamina: 15, restHP: 3, bossWinRate: 0.6, failExtraDamage: 0 };
+                        state = {
+                            hp: 20,
+                            stamina: 100,
+                            fragments: 0,
+                            inventory: [],
+                            currentFloor: 1,
+                            currentScene: 'entrance',
+                            _ghostAccepted: false,
+                            _bossDefeated: false,
+                            totalRest: 5,
+                            usedRestEvents: {},
+                            totalExplores: 0,
+                            difficulty: diff
+                        };
+                        window._eventResult = null;
+                        window._triggerGhost = false;
+                        showPage('start-screen');
+                        // 更新语言 UI（可能已切换）
+                        updateUILanguage();
+                    } },
+                    { label: t('back_confirm_no'), callback: function() {} }
+                ]
+            );
+        }
+
+        // ---- 语言选择 ----
+        function showLanguageSelector() {
+            const zhLabel = t('lang_zh');
+            const enLabel = t('lang_en');
+            const isZh = currentLang === 'zh';
+            showModal(
+                t('lang_select_title'),
+                `
+                <div style="display:flex; flex-direction:column; gap:12px; margin-top:10px;">
+                    <button class="modal-btn ${isZh ? 'selected' : ''}" id="lang-btn-zh" style="width:100%;">${zhLabel}</button>
+                    <button class="modal-btn ${!isZh ? 'selected' : ''}" id="lang-btn-en" style="width:100%;">${enLabel}</button>
+                </div>
+                `,
+                [] // 无底部按钮，使用内部按钮
+            );
+            // 绑定内部按钮事件
+            document.getElementById('lang-btn-zh').addEventListener('click', function() {
+                // 如果当前已经是中文，直接关闭
+                if (currentLang === 'zh') {
+                    closeModal();
+                    return;
+                }
+                // 切换中文不需要二次确认，直接切换
+                saveLanguage('zh');
+                updateUILanguage();
+                closeModal();
+            });
+            document.getElementById('lang-btn-en').addEventListener('click', function() {
+                if (currentLang === 'en') {
+                    closeModal();
+                    return;
+                }
+                // 二次确认
+                closeModal(); // 先关闭语言选择
+                const confirmBody = t('confirm_body', 'English');
+                showModal(
+                    t('confirm_title'),
+                    confirmBody,
+                    [
+                        { label: t('confirm_yes'), type: 'primary', callback: function() {
+                            saveLanguage('en');
+                            updateUILanguage();
+                            closeModal();
+                        } },
+                        { label: t('confirm_no'), callback: function() {
+                            // 取消，重新打开语言选择
+                            showLanguageSelector();
+                        } }
+                    ]
+                );
+            });
+        }
+
+        // ---- 定义 GAME 数据（完整场景） ----
+        GAME = {
+            start_scene: 'entrance',
+            events_pool: {
+                1: [
+                    { text: '霓虹灯牌爆炸，碎片划伤你。', hp: -5, stamina: -12, frag: 0, msg: '💥 -5 HP, -12 体力' },
+                    { text: '从废弃义体中拆出记忆碎片。', hp: 0, stamina: -8, frag: 1, msg: '🧩 +1 碎片' },
+                    { text: '流浪AI给你能量饮料。', hp: 0, stamina: 15, frag: 0, msg: '⚡ +15 体力' },
+                    { text: '巡逻无人机扫描，体力流失。', hp: 0, stamina: -18, frag: 0, msg: '📡 -18 体力' },
+                    { text: '破解加密日志，获得碎片线索。', hp: 0, stamina: -6, frag: 1, msg: '📜 +1 碎片' },
+                    { text: '你发现一个隐藏补给箱。', hp: 3, stamina: 10, frag: 0, msg: '📦 +3 HP, +10 体力' },
+                    { text: '被街头混混敲诈，损失碎片。', hp: -2, stamina: -8, frag: -1, msg: '💸 -1 碎片, -2 HP' },
+                    { id: 'rest_event_1a', type: 'rest_event', text: '你找到一瓶未开封的兴奋剂。', hp: 4, stamina: 20, frag: 0, msg: '💊 +4 HP, +20 体力' },
+                    { id: 'rest_event_1b', type: 'rest_event', text: '你在垃圾堆里发现了一盒营养膏。', hp: 6, stamina: 15, frag: 0, msg: '🥫 +6 HP, +15 体力' },
+                ],
+                2: [
+                    { text: '黑市商人卖你伪造ID，被骗。', hp: 0, stamina: -12, frag: -1, msg: '💸 -1 碎片, -12 体力' },
+                    { text: '在废弃机房找到完整数据盘。', hp: 0, stamina: -8, frag: 2, msg: '💾 +2 碎片' },
+                    { text: '义体过热，被迫冷却。', hp: -4, stamina: -14, frag: 0, msg: '🔥 -4 HP, -14 体力' },
+                    { text: '神秘信号源补充体力。', hp: 0, stamina: 20, frag: 0, msg: '📶 +20 体力' },
+                    { text: '破解门禁，获得加密密钥。', hp: 0, stamina: -6, frag: 0, msg: '🔑 获得「加密密钥」', special: 'key' },
+                    { text: '你发现一个黑市商店（可用碎片换体力）', hp: 0, stamina: 0, frag: 0, msg: '🏪 商店：用1碎片换15体力？', special: 'shop_2' },
+                    { id: 'rest_event_2a', type: 'rest_event', text: '你买了一杯营养液，恢复不少。', hp: 5, stamina: 18, frag: 0, msg: '🥤 +5 HP, +18 体力' },
+                    { id: 'rest_event_2b', type: 'rest_event', text: '你偷用了商人的修复仪。', hp: 3, stamina: 25, frag: 0, msg: '⚙️ +3 HP, +25 体力' },
+                ],
+                3: [
+                    { text: '幻影攻击你的意识。', hp: -6, stamina: -12, frag: 0, msg: '🌀 -6 HP, -12 体力' },
+                    { text: '成功入侵数据节点，窃取碎片。', hp: 0, stamina: -10, frag: 3, msg: '💻 +3 碎片' },
+                    { text: '防火墙反制，失去碎片。', hp: 0, stamina: -12, frag: -2, msg: '🛡️ -2 碎片, -12 体力' },
+                    { text: '找到安全屋，休息恢复。', hp: 4, stamina: 18, frag: 0, msg: '🏠 +4 HP, +18 体力' },
+                    { text: '遭遇数据幽灵的低语（特殊NPC）', hp: 0, stamina: 0, frag: 0, msg: '👻 你感到一阵寒意...', special: 'ghost_event' },
+                    { text: '迷宫陷阱，你触发警报。', hp: -3, stamina: -10, frag: -1, msg: '🚨 -3 HP, -10 体力, -1 碎片' },
+                    { id: 'rest_event_3a', type: 'rest_event', text: '你接入了一个废弃的充电桩。', hp: 2, stamina: 30, frag: 0, msg: '🔌 +2 HP, +30 体力' },
+                    { id: 'rest_event_3b', type: 'rest_event', text: '你从数据流中截获了能量包。', hp: 7, stamina: 12, frag: 0, msg: '📦 +7 HP, +12 体力' },
+                ],
+                4: [
+                    { text: '高压电击。', hp: -8, stamina: -16, frag: 0, msg: '⚡ -8 HP, -16 体力' },
+                    { text: '备份核心数据，获得大量碎片。', hp: 0, stamina: -12, frag: 4, msg: '💿 +4 碎片' },
+                    { text: '系统更新失败，强制重启。', hp: 0, stamina: -20, frag: 0, msg: '🔄 -20 体力' },
+                    { text: '找到公主的旧日记。', hp: 0, stamina: 10, frag: 1, msg: '📖 +1 碎片, +10 体力' },
+                    { text: '隐藏传送门出现（需5碎片+密钥+启动器）', hp: 0, stamina: 0, frag: 0, msg: '🚪 传送门已激活', special: 'portal_ready' },
+                    { text: '数据风暴，损失大量体力。', hp: -2, stamina: -22, frag: 0, msg: '🌪️ -2 HP, -22 体力' },
+                    { id: 'rest_event_4a', type: 'rest_event', text: '你利用冷却液恢复了体力。', hp: 4, stamina: 22, frag: 0, msg: '🧊 +4 HP, +22 体力' },
+                    { id: 'rest_event_4b', type: 'rest_event', text: '你找到一台便携式生命维持器。', hp: 8, stamina: 10, frag: 0, msg: '🩺 +8 HP, +10 体力' },
+                ],
+                5: [
+                    { text: '生化泄漏，腐蚀护甲。', hp: -7, stamina: -10, frag: 0, msg: '☣️ -7 HP, -10 体力' },
+                    { text: '破解实验终端，获得碎片。', hp: 0, stamina: -8, frag: 2, msg: '🧪 +2 碎片' },
+                    { text: '你找到一个医疗站。', hp: 6, stamina: 12, frag: 0, msg: '💉 +6 HP, +12 体力' },
+                    { text: '实验体暴走，你被击飞。', hp: -9, stamina: -14, frag: 0, msg: '👾 -9 HP, -14 体力' },
+                    { text: '你发现「核心启动器」原型。', hp: 0, stamina: -5, frag: 0, msg: '⚙️ 获得「核心启动器」', special: 'starter' },
+                    { text: '废弃机器人提供帮助，恢复体力。', hp: 0, stamina: 22, frag: 0, msg: '🤖 +22 体力' },
+                    { id: 'rest_event_5a', type: 'rest_event', text: '你找到了实验用的能量合剂。', hp: 5, stamina: 18, frag: 0, msg: '🧪 +5 HP, +18 体力' },
+                    { id: 'rest_event_5b', type: 'rest_event', text: '你启动了一台旧式恢复舱。', hp: 10, stamina: 5, frag: 0, msg: '🛌 +10 HP, +5 体力' },
+                ],
+                6: [
+                    { text: '辐射泄漏，严重伤害。', hp: -12, stamina: -18, frag: 0, msg: '☢️ -12 HP, -18 体力' },
+                    { text: '你找到反应堆核心数据，碎片+3。', hp: 0, stamina: -10, frag: 3, msg: '⚛️ +3 碎片' },
+                    { text: '冷却系统故障，体力急速流失。', hp: 0, stamina: -25, frag: 0, msg: '❄️ -25 体力' },
+                    { text: '你发现隐藏的能源补给。', hp: 4, stamina: 20, frag: 0, msg: '🔋 +4 HP, +20 体力' },
+                    { text: '数据守卫出现！必须击败它。', hp: 0, stamina: 0, frag: 0, msg: '🗡️ 遭遇BOSS！', special: 'boss_fight' },
+                    { id: 'rest_event_6a', type: 'rest_event', text: '你吸收了一部分反应堆余热转化为能量。', hp: 3, stamina: 25, frag: 0, msg: '🔥 +3 HP, +25 体力' },
+                    { id: 'rest_event_6b', type: 'rest_event', text: '你找到了紧急注射的纳米修复剂。', hp: 12, stamina: 5, frag: 0, msg: '💉 +12 HP, +5 体力' },
+                ]
+            },
+            scenes: {
+                entrance: {
+                    id: 'entrance',
+                    name: '霓虹底层',
+                    text: '你从垃圾堆中醒来，浑身插满管线，脑中只有一串模糊的代码：\n“找回五块核心碎片，解锁王座记忆。”\n\n街道上霓虹闪烁，你失去了所有过往，但隐约记得自己曾是这座城市的公主。\n\n目标：收集 <span class="highlight">5块记忆碎片</span>、<span class="highlight">加密密钥</span> 和 <span class="highlight">核心启动器</span>，开启最终传送门。',
+                    options: [
+                        { text: '🌆 深入第一层 · 废都街区', next: 'floor1' },
+                        { text: '📖 查看进度', next: 'check_progress' }
+                    ]
+                },
+                check_progress: {
+                    id: 'check_progress',
+                    name: '进度',
+                    text: function(state) { return '碎片：' + state.fragments + '/5\n体力：' + state.stamina + '，生命：' + state.hp + '\n剩余全局休息：' + state.totalRest + '\n总探索次数：' + state.totalExplores + '\n持有物品：' + (state.inventory.length ? state.inventory.join('、') : '无'); },
+                    options: [{ text: '↩️ 返回', next: 'entrance' }]
+                },
+                floor1: {
+                    id: 'floor1',
+                    name: '废都街区',
+                    text: '破败的霓虹招牌下，流浪汉与自动售货机共存。你记得这里曾是你巡视的辖区。',
+                    on_enter: function(state) { state.currentFloor = 1; return true; },
+                    options: [
+                        { text: '🔍 探索（消耗体力，成功率依难度）', next: 'explore_1' },
+                        { text: function(state) { return '🛌 休息（剩余 ' + state.totalRest + ' 次）'; }, next: 'rest_global', condition: function(s) { return s.totalRest > 0; } },
+                        { text: '🛌 休息（已用完）', next: null, condition: function(s) { return s.totalRest <= 0; } },
+                        { text: '⬆️ 前往第二层 · 黑市', next: 'floor2' }
+                    ]
+                },
+                explore_1: {
+                    id: 'explore_1',
+                    text: '你在霓虹阴影中搜寻…',
+                    on_enter: function(state) {
+                        const diff = state.difficulty || { exploreCost: 20, successRate: 0.5, failExtraDamage: 0 };
+                        if (state.stamina < diff.exploreCost) { window._eventResult = '⚠️ 体力不足！'; return true; }
+                        state.stamina -= diff.exploreCost;
+                        state.totalExplores++;
+                        var roll = Math.random();
+                        if (roll < diff.successRate) {
+                            sfxSuccess();
+                            var pool = GAME.events_pool[1] || [];
+                            var available = pool.filter(function(evt) {
+                                if (evt.type === 'rest_event') return !state.usedRestEvents[evt.id];
+                                return true;
+                            });
+                            if (available.length === 0) {
+                                window._eventResult = '你四处探索，但什么也没找到。';
+                            } else {
+                                var evt = available[Math.floor(Math.random() * available.length)];
+                                applyEvent(state, evt);
+                                window._eventResult = '🎲 成功！' + evt.msg;
+                            }
+                        } else {
+                            sfxFail();
+                            state.stamina -= 10;
+                            if (diff.failExtraDamage) state.hp += diff.failExtraDamage;
+                            if (state.fragments > 0 && Math.random() < 0.4) { state.fragments--; window._eventResult = '🎲 失败... 丢失1碎片，额外-10体力。'; }
+                            else { window._eventResult = '🎲 失败... 额外-10体力。'; }
+                            if (diff.failExtraDamage) {
+                                window._eventResult += ' 受到额外伤害 ' + (-diff.failExtraDamage) + ' HP。';
+                            }
+                        }
+                        clamp(state);
+                        return true;
+                    },
+                    options: [
+                        { text: '继续探索', next: 'explore_1' },
+                        { text: '返回街区', next: 'floor1' }
+                    ]
+                },
+                rest_global: {
+                    id: 'rest_global',
+                    text: '你找了个安全角落，闭眼休息。',
+                    on_enter: function(state) {
+                        const diff = state.difficulty || { restStamina: 15, restHP: 3 };
+                        state.totalRest--;
+                        state.stamina = Math.min(state.stamina + diff.restStamina, 120);
+                        state.hp = Math.min(state.hp + diff.restHP, 30);
+                        sfxHeal();
+                        window._eventResult = '⚡ +' + diff.restStamina + ' 体力，❤️ +' + diff.restHP + ' 生命（剩余休息 ' + state.totalRest + ' 次）';
+                        return true;
+                    },
+                    options: [{ text: '返回', next: function(state) { return 'floor' + state.currentFloor; } }]
+                },
+                floor2: {
+                    id: 'floor2',
+                    name: '义体黑市',
+                    text: '霓虹招牌下，义体零件被明码标价。你听到窃窃私语：“公主的碎片在黑市上炒到了天价。”',
+                    on_enter: function(state) { state.currentFloor = 2; return true; },
+                    options: [
+                        { text: '🔍 搜索黑市（消耗体力，成功率依难度）', next: 'explore_2' },
+                        { text: function(state) { return '🛌 休息（剩余 ' + state.totalRest + ' 次）'; }, next: 'rest_global', condition: function(s) { return s.totalRest > 0; } },
+                        { text: '🛌 休息（已用完）', next: null, condition: function(s) { return s.totalRest <= 0; } },
+                        { text: '⬆️ 前往第三层 · 神经网', next: 'floor3' }
+                    ]
+                },
+                explore_2: {
+                    id: 'explore_2',
+                    text: '你在黑市角落翻找…',
+                    on_enter: function(state) {
+                        const diff = state.difficulty || { exploreCost: 20, successRate: 0.5, failExtraDamage: 0 };
+                        if (state.stamina < diff.exploreCost) { window._eventResult = '⚠️ 体力不足！'; return true; }
+                        state.stamina -= diff.exploreCost;
+                        state.totalExplores++;
+                        var roll = Math.random();
+                        if (roll < diff.successRate) {
+                            sfxSuccess();
+                            var pool = GAME.events_pool[2] || [];
+                            var available = pool.filter(function(evt) {
+                                if (evt.type === 'rest_event') return !state.usedRestEvents[evt.id];
+                                return true;
+                            });
+                            if (available.length === 0) {
+                                window._eventResult = '你四处搜索，但毫无收获。';
+                            } else {
+                                var evt = available[Math.floor(Math.random() * available.length)];
+                                applyEvent(state, evt);
+                                window._eventResult = '🎲 成功！' + evt.msg;
+                                if (evt.special === 'shop_2') {
+                                    if (state.fragments >= 1) {
+                                        state.fragments--;
+                                        state.stamina = Math.min(state.stamina + 15, 120);
+                                        window._eventResult += ' 你交换了1碎片，获得15体力。';
+                                    } else {
+                                        window._eventResult += ' 但你没有碎片可以交换。';
+                                    }
+                                }
+                            }
+                        } else {
+                            sfxFail();
+                            state.stamina -= 10;
+                            if (diff.failExtraDamage) state.hp += diff.failExtraDamage;
+                            if (state.fragments > 0 && Math.random() < 0.4) { state.fragments--; window._eventResult = '🎲 失败... 丢失1碎片，额外-10体力。'; }
+                            else { window._eventResult = '🎲 失败... 额外-10体力。'; }
+                            if (diff.failExtraDamage) {
+                                window._eventResult += ' 受到额外伤害 ' + (-diff.failExtraDamage) + ' HP。';
+                            }
+                        }
+                        clamp(state);
+                        return true;
+                    },
+                    options: [
+                        { text: '继续搜索', next: 'explore_2' },
+                        { text: '返回黑市', next: 'floor2' }
+                    ]
+                },
+                floor3: {
+                    id: 'floor3',
+                    name: '神经网迷宫',
+                    text: '数据流在周围闪烁，你仿佛能听到自己的记忆在尖叫。',
+                    on_enter: function(state) { state.currentFloor = 3; return true; },
+                    options: [
+                        { text: '🔍 探索迷宫（消耗体力，成功率依难度）', next: 'explore_3' },
+                        { text: function(state) { return '🛌 休息（剩余 ' + state.totalRest + ' 次）'; }, next: 'rest_global', condition: function(s) { return s.totalRest > 0; } },
+                        { text: '🛌 休息（已用完）', next: null, condition: function(s) { return s.totalRest <= 0; } },
+                        { text: '⬆️ 前往第四层 · 云端数据中心', next: 'floor4' }
+                    ]
+                },
+                explore_3: {
+                    id: 'explore_3',
+                    text: '你沿数据流前进…',
+                    on_enter: function(state) {
+                        const diff = state.difficulty || { exploreCost: 20, successRate: 0.5, failExtraDamage: 0 };
+                        if (state.stamina < diff.exploreCost) { window._eventResult = '⚠️ 体力不足！'; return true; }
+                        state.stamina -= diff.exploreCost;
+                        state.totalExplores++;
+                        var roll = Math.random();
+                        if (roll < diff.successRate) {
+                            sfxSuccess();
+                            var pool = GAME.events_pool[3] || [];
+                            var available = pool.filter(function(evt) {
+                                if (evt.type === 'rest_event') return !state.usedRestEvents[evt.id];
+                                return true;
+                            });
+                            if (available.length === 0) {
+                                window._eventResult = '你四处探索，但一无所获。';
+                            } else {
+                                var evt = available[Math.floor(Math.random() * available.length)];
+                                applyEvent(state, evt);
+                                window._eventResult = '🎲 成功！' + evt.msg;
+                                if (evt.special === 'ghost_event' && state.inventory.includes('加密密钥')) {
+                                    window._triggerGhost = true;
+                                }
+                            }
+                        } else {
+                            sfxFail();
+                            state.stamina -= 10;
+                            if (diff.failExtraDamage) state.hp += diff.failExtraDamage;
+                            if (state.fragments > 0 && Math.random() < 0.4) { state.fragments--; window._eventResult = '🎲 失败... 丢失1碎片，额外-10体力。'; }
+                            else { window._eventResult = '🎲 失败... 额外-10体力。'; }
+                            if (diff.failExtraDamage) {
+                                window._eventResult += ' 受到额外伤害 ' + (-diff.failExtraDamage) + ' HP。';
+                            }
+                        }
+                        clamp(state);
+                        return true;
+                    },
+                    options: [
+                        { text: '继续探索', next: 'explore_3' },
+                        { text: '返回迷宫', next: 'floor3' },
+                        { text: '👻 寻找数据幽灵（需密钥）', next: 'ghost_meet', condition: function(s) { return s.inventory.includes('加密密钥') && window._triggerGhost; } }
+                    ]
+                },
+                ghost_meet: {
+                    id: 'ghost_meet',
+                    name: '数据幽灵',
+                    text: '光球低语：“我是你过去的回声，公主。我可以帮你，但你必须记住我们之间的羁绊。”',
+                    options: [
+                        { text: '💕 接受帮助（获得1碎片+特殊结局）', next: 'ghost_accept' },
+                        { text: '❌ 拒绝', next: 'floor3' }
+                    ]
+                },
+                ghost_accept: {
+                    id: 'ghost_accept',
+                    name: '羁绊',
+                    text: '光球融入义体，碎片+1，生命上限+5。',
+                    on_enter: function(state) {
+                        state.fragments += 1;
+                        state.hp = Math.min(state.hp + 5, 35);
+                        state.inventory.push('幽灵之吻');
+                        sfxSuccess();
+                        window._eventResult = '🧩 +1 碎片，❤️ 上限+5';
+                        state._ghostAccepted = true;
+                        return true;
+                    },
+                    options: [{ text: '返回', next: 'floor3' }]
+                },
+                floor4: {
+                    id: 'floor4',
+                    name: '云端数据中心',
+                    text: '全息屏幕闪烁，传送门显现，但需要 <span class="highlight">5碎片</span>、<span class="highlight">加密密钥</span> 和 <span class="highlight">核心启动器</span>。',
+                    on_enter: function(state) { state.currentFloor = 4; return true; },
+                    options: [
+                        { text: '🔍 扫描数据残骸（消耗体力，成功率依难度）', next: 'explore_4' },
+                        { text: function(state) { return '🛌 休息（剩余 ' + state.totalRest + ' 次）'; }, next: 'rest_global', condition: function(s) { return s.totalRest > 0; } },
+                        { text: '🛌 休息（已用完）', next: null, condition: function(s) { return s.totalRest <= 0; } },
+                        { text: '⬆️ 前往第五层 · 废弃实验室', next: 'floor5' }
+                    ]
+                },
+                explore_4: {
+                    id: 'explore_4',
+                    text: '你破解数据屏障…',
+                    on_enter: function(state) {
+                        const diff = state.difficulty || { exploreCost: 20, successRate: 0.5, failExtraDamage: 0 };
+                        if (state.stamina < diff.exploreCost) { window._eventResult = '⚠️ 体力不足！'; return true; }
+                        state.stamina -= diff.exploreCost;
+                        state.totalExplores++;
+                        var roll = Math.random();
+                        if (roll < diff.successRate) {
+                            sfxSuccess();
+                            var pool = GAME.events_pool[4] || [];
+                            var available = pool.filter(function(evt) {
+                                if (evt.type === 'rest_event') return !state.usedRestEvents[evt.id];
+                                return true;
+                            });
+                            if (available.length === 0) {
+                                window._eventResult = '你仔细扫描，但未发现任何有价值的东西。';
+                            } else {
+                                var evt = available[Math.floor(Math.random() * available.length)];
+                                applyEvent(state, evt);
+                                window._eventResult = '🎲 成功！' + evt.msg;
+                            }
+                        } else {
+                            sfxFail();
+                            state.stamina -= 10;
+                            if (diff.failExtraDamage) state.hp += diff.failExtraDamage;
+                            if (state.fragments > 0 && Math.random() < 0.4) { state.fragments--; window._eventResult = '🎲 失败... 丢失1碎片，额外-10体力。'; }
+                            else { window._eventResult = '🎲 失败... 额外-10体力。'; }
+                            if (diff.failExtraDamage) {
+                                window._eventResult += ' 受到额外伤害 ' + (-diff.failExtraDamage) + ' HP。';
+                            }
+                        }
+                        clamp(state);
+                        return true;
+                    },
+                    options: [
+                        { text: '继续扫描', next: 'explore_4' },
+                        { text: '返回数据中心', next: 'floor4' }
+                    ]
+                },
+                floor5: {
+                    id: 'floor5',
+                    name: '废弃实验室',
+                    text: '试管碎裂，培养液四溢。你闻到刺鼻的化学气味，这里可能藏有「核心启动器」。',
+                    on_enter: function(state) { state.currentFloor = 5; return true; },
+                    options: [
+                        { text: '🔍 探索实验室（消耗体力，成功率依难度）', next: 'explore_5' },
+                        { text: function(state) { return '🛌 休息（剩余 ' + state.totalRest + ' 次）'; }, next: 'rest_global', condition: function(s) { return s.totalRest > 0; } },
+                        { text: '🛌 休息（已用完）', next: null, condition: function(s) { return s.totalRest <= 0; } },
+                        { text: '⬆️ 前往第六层 · 核心反应堆', next: 'floor6' }
+                    ]
+                },
+                explore_5: {
+                    id: 'explore_5',
+                    text: '你在废墟中翻找…',
+                    on_enter: function(state) {
+                        const diff = state.difficulty || { exploreCost: 20, successRate: 0.5, failExtraDamage: 0 };
+                        if (state.stamina < diff.exploreCost) { window._eventResult = '⚠️ 体力不足！'; return true; }
+                        state.stamina -= diff.exploreCost;
+                        state.totalExplores++;
+                        var roll = Math.random();
+                        if (roll < diff.successRate) {
+                            sfxSuccess();
+                            var pool = GAME.events_pool[5] || [];
+                            var available = pool.filter(function(evt) {
+                                if (evt.type === 'rest_event') return !state.usedRestEvents[evt.id];
+                                return true;
+                            });
+                            if (available.length === 0) {
+                                window._eventResult = '你翻遍废墟，只找到一堆废铁。';
+                            } else {
+                                var evt = available[Math.floor(Math.random() * available.length)];
+                                applyEvent(state, evt);
+                                window._eventResult = '🎲 成功！' + evt.msg;
+                            }
+                        } else {
+                            sfxFail();
+                            state.stamina -= 10;
+                            if (diff.failExtraDamage) state.hp += diff.failExtraDamage;
+                            if (state.fragments > 0 && Math.random() < 0.4) { state.fragments--; window._eventResult = '🎲 失败... 丢失1碎片，额外-10体力。'; }
+                            else { window._eventResult = '🎲 失败... 额外-10体力。'; }
+                            if (diff.failExtraDamage) {
+                                window._eventResult += ' 受到额外伤害 ' + (-diff.failExtraDamage) + ' HP。';
+                            }
+                        }
+                        clamp(state);
+                        return true;
+                    },
+                    options: [
+                        { text: '继续探索', next: 'explore_5' },
+                        { text: '返回实验室', next: 'floor5' }
+                    ]
+                },
+                floor6: {
+                    id: 'floor6',
+                    name: '核心反应堆',
+                    text: '反应堆发出低沉的嗡鸣，你感到温度急剧上升。这里必须找到「核心启动器」并击败数据守卫。',
+                    on_enter: function(state) { state.currentFloor = 6; return true; },
+                    options: [
+                        { text: '🔍 探索反应堆（消耗体力，成功率依难度）', next: 'explore_6' },
+                        { text: function(state) { return '🛌 休息（剩余 ' + state.totalRest + ' 次）'; }, next: 'rest_global', condition: function(s) { return s.totalRest > 0; } },
+                        { text: '🛌 休息（已用完）', next: null, condition: function(s) { return s.totalRest <= 0; } },
+                        { text: '⚔️ 挑战数据守卫（需核心启动器）', next: 'boss_fight', condition: function(s) { return s.inventory.includes('核心启动器'); } }
+                    ]
+                },
+                explore_6: {
+                    id: 'explore_6',
+                    text: '你避开辐射区搜索…',
+                    on_enter: function(state) {
+                        const diff = state.difficulty || { exploreCost: 20, successRate: 0.5, failExtraDamage: 0 };
+                        if (state.stamina < diff.exploreCost) { window._eventResult = '⚠️ 体力不足！'; return true; }
+                        state.stamina -= diff.exploreCost;
+                        state.totalExplores++;
+                        var roll = Math.random();
+                        if (roll < diff.successRate) {
+                            sfxSuccess();
+                            var pool = GAME.events_pool[6] || [];
+                            var available = pool.filter(function(evt) {
+                                if (evt.type === 'rest_event') return !state.usedRestEvents[evt.id];
+                                return true;
+                            });
+                            if (available.length === 0) {
+                                window._eventResult = '你仔细搜索，但这里已被搜刮一空。';
+                            } else {
+                                var evt = available[Math.floor(Math.random() * available.length)];
+                                applyEvent(state, evt);
+                                window._eventResult = '🎲 成功！' + evt.msg;
+                                if (evt.special === 'boss_fight') {
+                                    state.currentScene = 'boss_fight';
+                                    render();
+                                    return;
+                                }
+                            }
+                        } else {
+                            sfxFail();
+                            state.stamina -= 10;
+                            if (diff.failExtraDamage) state.hp += diff.failExtraDamage;
+                            if (state.fragments > 0 && Math.random() < 0.4) { state.fragments--; window._eventResult = '🎲 失败... 丢失1碎片，额外-10体力。'; }
+                            else { window._eventResult = '🎲 失败... 额外-10体力。'; }
+                            if (diff.failExtraDamage) {
+                                window._eventResult += ' 受到额外伤害 ' + (-diff.failExtraDamage) + ' HP。';
+                            }
+                        }
+                        clamp(state);
+                        return true;
+                    },
+                    options: [
+                        { text: '继续探索', next: 'explore_6' },
+                        { text: '返回反应堆', next: 'floor6' }
+                    ]
+                },
+                boss_fight: {
+                    id: 'boss_fight',
+                    name: '数据守卫',
+                    text: '巨大的数据实体从核心升起！你必须击败它才能开启传送门。\n（战斗消耗30体力，若体力不足则无法战斗）',
+                    options: [
+                        { text: '⚡ 全力攻击（消耗30体力，胜率依难度）', next: 'boss_result' },
+                        { text: '🛡️ 防御姿态（消耗15体力，低胜率）', next: 'boss_result_def' }
+                    ]
+                },
+                boss_result: {
+                    id: 'boss_result',
+                    text: '你发动猛攻…',
+                    on_enter: function(state) {
+                        const diff = state.difficulty || { bossWinRate: 0.6 };
+                        if (state.stamina < 30) {
+                            window._eventResult = '⚠️ 体力不足，无法攻击！';
+                            state.currentScene = 'floor6';
+                            render();
+                            return;
+                        }
+                        state.stamina -= 30;
+                        var win = Math.random() < diff.bossWinRate;
+                        if (win) {
+                            sfxSuccess();
+                            state.inventory.push('胜利勋章');
+                            window._eventResult = '🎉 你击溃了守卫！传送门完全开启。';
+                            state._bossDefeated = true;
+                            state.currentScene = 'ending_check';
+                        } else {
+                            sfxFail();
+                            state.hp -= 10;
+                            window._eventResult = '💢 守卫重创了你，你被迫撤退。';
+                            clamp(state);
+                            state.currentScene = 'floor6';
+                        }
+                        render();
+                        return;
+                    },
+                    options: []
+                },
+                boss_result_def: {
+                    id: 'boss_result_def',
+                    text: '你采取守势…',
+                    on_enter: function(state) {
+                        if (state.stamina < 15) {
+                            window._eventResult = '⚠️ 体力不足！';
+                            state.currentScene = 'floor6';
+                            render();
+                            return;
+                        }
+                        state.stamina -= 15;
+                        var win = Math.random() < 0.2;
+                        if (win) {
+                            sfxSuccess();
+                            state.inventory.push('胜利勋章');
+                            window._eventResult = '🎉 你奇迹般抵挡并反击成功！';
+                            state._bossDefeated = true;
+                            state.currentScene = 'ending_check';
+                        } else {
+                            sfxFail();
+                            state.hp -= 15;
+                            window._eventResult = '💀 守卫将你击倒...';
+                            clamp(state);
+                            state.currentScene = 'floor6';
+                        }
+                        render();
+                        return;
+                    },
+                    options: []
+                },
+                ending_check: {
+                    id: 'ending_check',
+                    name: '传送门',
+                    text: '你站在传送门前，碎片、密钥、启动器已集齐。',
+                    options: [
+                        { text: '🚪 踏入传送门（进入结局）', next: 'ending_good' }
+                    ]
+                },
+                ending_good: {
+                    id: 'ending_good',
+                    name: '🏆 王座觉醒',
+                    text: function(state) {
+                        var extra = '';
+                        if (state._ghostAccepted) {
+                            extra = '\n\n数据幽灵的光球与你融为一体，你们携手登上王座。\n—— 羁绊结局 ——';
+                        } else {
+                            extra = '\n\n你独自坐回王座，记忆恢复，但心中空落。\n—— 孤独之王结局 ——';
+                        }
+                        return '传送门开启，你走入王座室。五块碎片与密钥、启动器激活了核心，\n你的记忆完全恢复——你曾是这座霓虹之都的公主，\n如今你带着所有碎片归来，重新执掌这座城市。' + extra;
+                    },
+                    options: [{ text: '🔄 二周目', next: '__RESTART__' }]
+                },
+                ending_death: {
+                    id: 'ending_death',
+                    name: '💀 数据崩解',
+                    text: '你的体力/生命归零，意识消散。你的代码被永久删除。\n—— 虚无结局 ——',
+                    options: [{ text: '🔄 重来', next: '__RESTART__' }]
+                }
+            }
+        };
+
+        // ---- 绑定事件 ----
+        document.addEventListener('DOMContentLoaded', function() {
+
+            // 加载语言
+            loadLanguage();
+            updateUILanguage();
+
+            // 开始界面
+            document.getElementById('btn-start').addEventListener('click', function() {
+                sfxClick();
+                showPage('mode-screen');
+                // 更新模式界面的语言（可能在切换语言后）
+                // 但 updateUILanguage 已处理
+            });
+            document.getElementById('btn-archive').addEventListener('click', function() {
+                sfxClick();
+                renderArchive();
+                showPage('archive-screen');
+            });
+            document.getElementById('btn-achievements').addEventListener('click', function() {
+                sfxClick();
+                renderAchievements();
+                showPage('achievement-screen');
+            });
+            document.getElementById('btn-announce').addEventListener('click', function() {
+                sfxClick();
+                showAnnouncement();
+            });
+
+            // 语言球
+            document.getElementById('lang-ball').addEventListener('click', function() {
+                sfxClick();
+                showLanguageSelector();
+            });
+
+            // 模式选择
+            document.getElementById('mode-hard').addEventListener('click', function() {
+                sfxClick();
+                startGameWithMode('hard');
+            });
+            document.getElementById('mode-insane').addEventListener('click', function() {
+                sfxClick();
+                startGameWithMode('insane');
+            });
+            document.getElementById('mode-back').addEventListener('click', function() {
+                sfxClick();
+                showPage('start-screen');
+            });
+
+            // 返回
+            document.getElementById('ach-back').addEventListener('click', function() {
+                sfxClick();
+                showPage('start-screen');
+                updateUILanguage(); // 确保语言更新
+            });
+            document.getElementById('arch-back').addEventListener('click', function() {
+                sfxClick();
+                showPage('start-screen');
+                updateUILanguage();
+            });
+
+            // 游戏内
+            document.getElementById('reset-btn').addEventListener('click', function() {
+                sfxClick();
+                resetGame();
+            });
+            document.getElementById('hint-reset-btn').addEventListener('click', function() {
+                sfxClick();
+                resetGame();
+            });
+            document.getElementById('btn-back-menu').addEventListener('click', function() {
+                sfxClick();
+                backToMenu();
+            });
+
+            // 默认显示开始界面
+            showPage('start-screen');
+
+            // --- 自动弹出公告（仅当前会话一次） ---
+            if (!sessionStorage.getItem('announcement_shown')) {
+                sessionStorage.setItem('announcement_shown', 'true');
+                setTimeout(function() {
+                    showAnnouncement();
+                }, 300);
+            }
+        });
+    })();
+</script>
+</body>
+</html>
