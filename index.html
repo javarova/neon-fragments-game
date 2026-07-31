@@ -46,11 +46,9 @@
             50% { background-position: 100% 50%; }
             100% { background-position: 0% 50%; }
         }
-
         .page { display: none; width: 100%; animation: fadeSlide 0.3s ease; }
         .page.active { display: block; }
 
-        /* ===== 开始界面 ===== */
         #start-screen { text-align: center; padding: 40px 10px 20px; position: relative; }
         #start-screen h1 { font-size: 28px; color: #7fc9ff; text-shadow: 0 0 30px #3a7a9a; margin-bottom: 10px; letter-spacing: 4px; }
         #start-screen .subtitle { font-size: 12px; color: #8aaccc; margin-bottom: 30px; opacity: 0.8; }
@@ -68,12 +66,10 @@
         .menu-btn.back-btn { width: auto; padding: 8px 24px; font-size: 11px; margin-top: 30px; background: #2a2a3a; border-color: #4a4a5a; }
         .menu-btn.back-btn:hover { background: #3a3a4a; }
 
-        /* ===== 模式选择界面 ===== */
         #mode-screen { text-align: center; padding: 40px 10px 20px; }
         #mode-screen h2 { font-size: 20px; color: #f9ca6b; text-shadow: 0 0 20px #f9ca6b; margin-bottom: 30px; }
         #mode-screen .mode-desc { font-size: 11px; color: #8aaccc; margin: 8px 0 20px; }
 
-        /* ===== 成就 & 档案界面 ===== */
         #achievement-screen, #archive-screen { padding: 20px 10px; }
         #achievement-screen h2, #archive-screen h2 {
             font-size: 20px; text-align: center; margin-bottom: 30px;
@@ -98,7 +94,6 @@
         .archive-data .value { color: #d0e4f0; float: right; }
         .no-archive { text-align: center; color: #7a9ab5; padding: 30px 0; font-size: 13px; }
 
-        /* ===== 游戏界面 ===== */
         #status-bar {
             display: flex; justify-content: space-between; background: #0b141e;
             padding: 10px 16px; border-radius: 40px; margin-bottom: 22px;
@@ -149,7 +144,6 @@
             color: #c3ddf5; font-size: 10px;
         }
 
-        /* 游戏内工具栏 */
         .game-toolbar {
             display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;
         }
@@ -178,7 +172,6 @@
         }
         #hint-area .hint-btn:hover { background: #ff8a8a; }
 
-        /* ===== 语言球 ===== */
         #lang-ball {
             position: relative;
             display: inline-block;
@@ -222,7 +215,6 @@
             opacity: 1;
         }
 
-        /* ===== 模态弹窗 ===== */
         #modal-overlay {
             display: none;
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -296,18 +288,18 @@
         <button class="menu-btn" id="btn-archive" data-key="btn_archive">📂 查看档案</button>
         <button class="menu-btn" id="btn-achievements" data-key="btn_achievements">🏆 成就</button>
         <button class="menu-btn" id="btn-announce" data-key="btn_announce">📢 公告</button>
-        <div class="version" id="lang-version">V0.30.2 制作人 Javarova</div>
-
-        <!-- 语言球 -->
+        <div class="version" id="lang-version">V0.42.3 制作人 Javarova</div>
         <div id="lang-ball" title="语言 / Language">
             🌐
             <span class="tooltip">语言</span>
         </div>
     </div>
 
-    <!-- ===== 模式选择界面 ===== -->
+    <!-- ===== 模式选择 ===== -->
     <div id="mode-screen" class="page">
         <h2 id="mode-title">⚔️ 选择难度</h2>
+        <button class="menu-btn" id="mode-easy">🌟 简单</button>
+        <div class="mode-desc" id="mode-desc-easy">探索消耗 15 体力 · 成功率 60% · 休息恢复增加</div>
         <button class="menu-btn" id="mode-hard">🔥 困难</button>
         <div class="mode-desc" id="mode-desc-hard">探索消耗 25 体力 · 成功率 40% · 休息恢复减半</div>
         <button class="menu-btn" id="mode-insane">💀 吊炸天</button>
@@ -354,7 +346,7 @@
         <button class="menu-btn back-btn" id="arch-back">← 返回</button>
     </div>
 
-    <!-- ===== 模态弹窗（通用） ===== -->
+    <!-- ===== 模态弹窗 ===== -->
     <div id="modal-overlay">
         <div class="modal-box">
             <div class="modal-title" id="modal-title">标题</div>
@@ -366,13 +358,10 @@
 </div>
 
 <script>
-    // ================================================================
-    // 全部游戏逻辑
-    // ================================================================
     (function() {
         'use strict';
 
-        // ---- 语言系统 ----
+        // ==================== 语言系统 ====================
         const LANG = {
             'zh': {
                 title: '✦ 霓虹残片',
@@ -381,15 +370,17 @@
                 btn_archive: '📂 查看档案',
                 btn_achievements: '🏆 成就',
                 btn_announce: '📢 公告',
-                version: 'V0.30.2 制作人 Javarova',
+                version: 'V0.42.3 制作人 Javarova',
                 mode_title: '⚔️ 选择难度',
+                mode_easy: '🌟 简单',
+                mode_easy_desc: '探索消耗 15 体力 · 成功率 60% · 休息恢复增加',
                 mode_hard: '🔥 困难',
                 mode_hard_desc: '探索消耗 25 体力 · 成功率 40% · 休息恢复减半',
                 mode_insane: '💀 吊炸天',
                 mode_insane_desc: '探索消耗 30 体力 · 成功率 30% · 休息几乎无效 · BOSS 胜率 30%',
                 mode_back: '← 返回',
                 announce_title: '📢 公告',
-                announce_body: '这是一个个人开发的独立文字网页小游戏，目前部分内容仍处于测试阶段，请耐心等待后续更新，<br>---- Javarova',
+                announce_body: '8.1日更新内容：调整了钥匙等关键道具的爆率，新增简单难度，部分bug仍需等待后续修复---- Javarova',
                 announce_btn: '我知道了',
                 lang_select_title: '🌐 语言选择',
                 lang_zh: '简体中文',
@@ -412,15 +403,17 @@
                 btn_archive: '📂 Archive',
                 btn_achievements: '🏆 Achievements',
                 btn_announce: '📢 Announcement',
-                version: 'V0.30.2 Dev Javarova',
+                version: 'V0.42.3 Dev Javarova',
                 mode_title: '⚔️ Select Difficulty',
+                mode_easy: '🌟 Easy',
+                mode_easy_desc: 'Explore cost 15 stamina · Success rate 60% · Rest recovery increased',
                 mode_hard: '🔥 Hard',
                 mode_hard_desc: 'Explore cost 25 stamina · Success rate 40% · Rest recovery halved',
                 mode_insane: '💀 Insane',
                 mode_insane_desc: 'Explore cost 30 stamina · Success rate 30% · Rest nearly useless · Boss win rate 30%',
                 mode_back: '← Back',
                 announce_title: '📢 Announcement',
-                announce_body: 'This is an indie text-based web game, some content is still in beta. Please stay tuned for updates.<br>---- Javarova',
+                announce_body: 'Aug 1 Update: Adjusted key item drop rates, added Easy mode, some bugs still under repair ---- Javarova',
                 announce_btn: 'Got it',
                 lang_select_title: '🌐 Language',
                 lang_zh: '简体中文',
@@ -438,9 +431,8 @@
             }
         };
 
-        let currentLang = 'zh'; // 默认简体中文
+        let currentLang = 'zh';
 
-        // 加载保存的语言
         function loadLanguage() {
             const saved = localStorage.getItem('game_lang');
             if (saved && (saved === 'zh' || saved === 'en')) {
@@ -464,7 +456,6 @@
             return text || key;
         }
 
-        // 更新界面文本（开始界面 & 模式选择）
         function updateUILanguage() {
             document.getElementById('lang-title').innerText = t('title');
             document.getElementById('lang-subtitle').innerText = t('subtitle');
@@ -475,16 +466,16 @@
             document.getElementById('lang-version').innerText = t('version');
 
             document.getElementById('mode-title').innerText = t('mode_title');
+            document.getElementById('mode-easy').innerText = t('mode_easy');
+            document.getElementById('mode-desc-easy').innerText = t('mode_easy_desc');
             document.getElementById('mode-hard').innerText = t('mode_hard');
             document.getElementById('mode-desc-hard').innerText = t('mode_hard_desc');
             document.getElementById('mode-insane').innerText = t('mode_insane');
             document.getElementById('mode-desc-insane').innerText = t('mode_insane_desc');
             document.getElementById('mode-back').innerText = t('mode_back');
-
-            // 存档中的“空”文本会在渲染时动态调用 t
         }
 
-        // ---- 音效 ----
+        // ==================== 音效 ====================
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
         let audioCtx = null;
         function playTone(freq, duration, type, volume) {
@@ -509,7 +500,7 @@
         function sfxItem() { playTone(1000, 0.1, 'square', 0.05); }
         function sfxAchievement() { playTone(1500, 0.15, 'sine', 0.15); setTimeout(() => playTone(1800, 0.1, 'sine', 0.12), 150); }
 
-        // ---- 成就系统 ----
+        // ==================== 成就系统 ====================
         const ACHIEVEMENTS = [
             { id: 'fragments', name: '碎片收集者', desc: '收集 5 块记忆碎片', icon: '🧩', hidden: false },
             { id: 'all_items', name: '全副武装', desc: '获得所有特殊物品', icon: '⚙️', hidden: false },
@@ -565,7 +556,7 @@
             });
         }
 
-        // ---- 存档 ----
+        // ==================== 存档 ====================
         function saveGame(state) {
             const data = {
                 fragments: state.fragments,
@@ -592,10 +583,9 @@
             return null;
         }
 
-        // ---- 游戏数据（完整场景） ----
+        // ==================== 游戏数据 ====================
         let GAME = null;
 
-        // 状态
         let state = {
             hp: 20,
             stamina: 100,
@@ -688,7 +678,6 @@
             return null;
         }
 
-        // ---- 渲染 ----
         function render() {
             const scene = getScene(state.currentScene);
             if (!scene) return;
@@ -778,7 +767,6 @@
                 });
             }
 
-            // 提示
             const hintArea = document.getElementById('hint-area');
             const hintMsg = document.getElementById('hint-message');
             const hint = checkCriticalHints(state);
@@ -847,10 +835,11 @@
             prevFrag = state.fragments;
         }
 
-        // ---- 启动游戏（带难度） ----
         function startGameWithMode(mode) {
             let diff;
-            if (mode === 'hard') {
+            if (mode === 'easy') {
+                diff = { exploreCost: 15, successRate: 0.6, restStamina: 20, restHP: 5, bossWinRate: 0.7, failExtraDamage: 0 };
+            } else if (mode === 'hard') {
                 diff = { exploreCost: 25, successRate: 0.4, restStamina: 10, restHP: 2, bossWinRate: 0.5, failExtraDamage: 0 };
             } else if (mode === 'insane') {
                 diff = { exploreCost: 30, successRate: 0.3, restStamina: 5, restHP: 1, bossWinRate: 0.3, failExtraDamage: -3 };
@@ -898,7 +887,6 @@
             saveGame(state);
         }
 
-        // ---- 页面切换 ----
         function showPage(pageId) {
             document.querySelectorAll('.page').forEach(function(p) {
                 p.classList.remove('active');
@@ -906,7 +894,6 @@
             document.getElementById(pageId).classList.add('active');
         }
 
-        // ---- 档案 ----
         function renderArchive() {
             const data = loadGame();
             const content = document.getElementById('archive-content');
@@ -915,6 +902,9 @@
                 return;
             }
             const diff = data.difficulty || { exploreCost: 20, successRate: 0.5 };
+            const diffName = diff.exploreCost === 15 ? '简单' :
+                             diff.exploreCost === 25 ? '困难' :
+                             diff.exploreCost === 30 ? '吊炸天' : '普通';
             content.innerHTML = `
                 <div><span class="label">🧩 记忆碎片</span><span class="value">${data.fragments} / 5</span></div>
                 <div><span class="label">📦 持有物品</span><span class="value">${data.inventory.length ? data.inventory.join('、') : '无'}</span></div>
@@ -925,11 +915,10 @@
                 <div><span class="label">⚡ 体力</span><span class="value">${data.stamina}</span></div>
                 <div><span class="label">💕 幽灵羁绊</span><span class="value">${data._ghostAccepted ? '已接受' : '未触发'}</span></div>
                 <div><span class="label">⚔️ BOSS 状态</span><span class="value">${data._bossDefeated ? '已击败' : '未挑战'}</span></div>
-                <div><span class="label">⚙️ 难度</span><span class="value">${diff.exploreCost === 20 ? '普通' : diff.exploreCost === 25 ? '困难' : '吊炸天'}</span></div>
+                <div><span class="label">⚙️ 难度</span><span class="value">${diffName}</span></div>
             `;
         }
 
-        // ---- 模态弹窗 ----
         function showModal(title, bodyHTML, actions) {
             const overlay = document.getElementById('modal-overlay');
             document.getElementById('modal-title').innerText = title;
@@ -953,7 +942,6 @@
             document.getElementById('modal-overlay').classList.remove('active');
         }
 
-        // ---- 显示公告 ----
         function showAnnouncement() {
             showModal(
                 t('announce_title'),
@@ -962,7 +950,6 @@
             );
         }
 
-        // ---- 返回主菜单 ----
         function backToMenu() {
             showModal(
                 t('back_confirm_title'),
@@ -987,7 +974,6 @@
                         window._eventResult = null;
                         window._triggerGhost = false;
                         showPage('start-screen');
-                        // 更新语言 UI（可能已切换）
                         updateUILanguage();
                     } },
                     { label: t('back_confirm_no'), callback: function() {} }
@@ -995,7 +981,6 @@
             );
         }
 
-        // ---- 语言选择 ----
         function showLanguageSelector() {
             const zhLabel = t('lang_zh');
             const enLabel = t('lang_en');
@@ -1008,27 +993,17 @@
                     <button class="modal-btn ${!isZh ? 'selected' : ''}" id="lang-btn-en" style="width:100%;">${enLabel}</button>
                 </div>
                 `,
-                [] // 无底部按钮，使用内部按钮
+                []
             );
-            // 绑定内部按钮事件
             document.getElementById('lang-btn-zh').addEventListener('click', function() {
-                // 如果当前已经是中文，直接关闭
-                if (currentLang === 'zh') {
-                    closeModal();
-                    return;
-                }
-                // 切换中文不需要二次确认，直接切换
+                if (currentLang === 'zh') { closeModal(); return; }
                 saveLanguage('zh');
                 updateUILanguage();
                 closeModal();
             });
             document.getElementById('lang-btn-en').addEventListener('click', function() {
-                if (currentLang === 'en') {
-                    closeModal();
-                    return;
-                }
-                // 二次确认
-                closeModal(); // 先关闭语言选择
+                if (currentLang === 'en') { closeModal(); return; }
+                closeModal();
                 const confirmBody = t('confirm_body', 'English');
                 showModal(
                     t('confirm_title'),
@@ -1040,7 +1015,6 @@
                             closeModal();
                         } },
                         { label: t('confirm_no'), callback: function() {
-                            // 取消，重新打开语言选择
                             showLanguageSelector();
                         } }
                     ]
@@ -1048,7 +1022,7 @@
             });
         }
 
-        // ---- 定义 GAME 数据（完整场景） ----
+        // ==================== 完整游戏场景数据 ====================
         GAME = {
             start_scene: 'entrance',
             events_pool: {
@@ -1069,6 +1043,8 @@
                     { text: '义体过热，被迫冷却。', hp: -4, stamina: -14, frag: 0, msg: '🔥 -4 HP, -14 体力' },
                     { text: '神秘信号源补充体力。', hp: 0, stamina: 20, frag: 0, msg: '📶 +20 体力' },
                     { text: '破解门禁，获得加密密钥。', hp: 0, stamina: -6, frag: 0, msg: '🔑 获得「加密密钥」', special: 'key' },
+                    { text: '你在服务器角落发现了一把备用密钥。', hp: 0, stamina: -4, frag: 0, msg: '🔑 获得「加密密钥」', special: 'key' },
+                    { text: '黑市商人偷偷卖给你一把密钥。', hp: 0, stamina: -8, frag: 0, msg: '🔑 获得「加密密钥」', special: 'key' },
                     { text: '你发现一个黑市商店（可用碎片换体力）', hp: 0, stamina: 0, frag: 0, msg: '🏪 商店：用1碎片换15体力？', special: 'shop_2' },
                     { id: 'rest_event_2a', type: 'rest_event', text: '你买了一杯营养液，恢复不少。', hp: 5, stamina: 18, frag: 0, msg: '🥤 +5 HP, +18 体力' },
                     { id: 'rest_event_2b', type: 'rest_event', text: '你偷用了商人的修复仪。', hp: 3, stamina: 25, frag: 0, msg: '⚙️ +3 HP, +25 体力' },
@@ -1604,19 +1580,14 @@
             }
         };
 
-        // ---- 绑定事件 ----
+        // ==================== 事件绑定 ====================
         document.addEventListener('DOMContentLoaded', function() {
-
-            // 加载语言
             loadLanguage();
             updateUILanguage();
 
-            // 开始界面
             document.getElementById('btn-start').addEventListener('click', function() {
                 sfxClick();
                 showPage('mode-screen');
-                // 更新模式界面的语言（可能在切换语言后）
-                // 但 updateUILanguage 已处理
             });
             document.getElementById('btn-archive').addEventListener('click', function() {
                 sfxClick();
@@ -1632,14 +1603,15 @@
                 sfxClick();
                 showAnnouncement();
             });
-
-            // 语言球
             document.getElementById('lang-ball').addEventListener('click', function() {
                 sfxClick();
                 showLanguageSelector();
             });
 
-            // 模式选择
+            document.getElementById('mode-easy').addEventListener('click', function() {
+                sfxClick();
+                startGameWithMode('easy');
+            });
             document.getElementById('mode-hard').addEventListener('click', function() {
                 sfxClick();
                 startGameWithMode('hard');
@@ -1653,11 +1625,10 @@
                 showPage('start-screen');
             });
 
-            // 返回
             document.getElementById('ach-back').addEventListener('click', function() {
                 sfxClick();
                 showPage('start-screen');
-                updateUILanguage(); // 确保语言更新
+                updateUILanguage();
             });
             document.getElementById('arch-back').addEventListener('click', function() {
                 sfxClick();
@@ -1665,7 +1636,6 @@
                 updateUILanguage();
             });
 
-            // 游戏内
             document.getElementById('reset-btn').addEventListener('click', function() {
                 sfxClick();
                 resetGame();
@@ -1679,10 +1649,8 @@
                 backToMenu();
             });
 
-            // 默认显示开始界面
             showPage('start-screen');
 
-            // --- 自动弹出公告（仅当前会话一次） ---
             if (!sessionStorage.getItem('announcement_shown')) {
                 sessionStorage.setItem('announcement_shown', 'true');
                 setTimeout(function() {
